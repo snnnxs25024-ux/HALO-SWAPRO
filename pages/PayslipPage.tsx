@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { Payslip, Employee, Client } from '../types.ts';
+import { Payslip, Employee, Client } from '../types';
 import { UploadCloud, FileDown, Calendar, Search, Download, User } from 'lucide-react';
 import { read, utils } from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { supabase } from '../services/supabaseClient.ts';
-import { useNotifier } from '../components/Notifier.tsx';
+import { supabase } from '../services/supabaseClient';
+import { useNotifier } from '../components/Notifier';
 
 interface PayslipPageProps {
     payslips: Payslip[];

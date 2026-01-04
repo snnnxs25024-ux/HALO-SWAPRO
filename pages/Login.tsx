@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
-import { User } from '../types.ts';
+import { User } from '../types';
 import { useNavigate } from 'react-router-dom';
 
 interface LoginProps {

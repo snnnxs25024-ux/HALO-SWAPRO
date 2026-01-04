@@ -10,7 +10,7 @@ import {
   Menu,
   X
 } from 'lucide-react';
-import { User } from '../types.ts';
+import { User } from '../types';
 
 interface SidebarProps {
   user: User;

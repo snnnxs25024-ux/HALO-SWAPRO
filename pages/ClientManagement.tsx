@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { Client, Employee } from '../types.ts';
+import { Client, Employee } from '../types';
 import { Search, Plus, Edit, Trash2, Building, Users, X } from 'lucide-react';
-import { useNotifier } from '../components/Notifier.tsx';
+import { useNotifier } from '../components/Notifier';
 
 interface ClientManagementProps {
     clients: Client[];

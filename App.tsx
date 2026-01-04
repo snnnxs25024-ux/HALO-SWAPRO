@@ -1,29 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { User, UserRole, AppState, Client, Employee, Message, Chat, Payslip, DataEntry, DataStatus } from './types.ts';
-import Landing from './pages/Landing.tsx';
-import Login from './pages/Login.tsx';
-import Dashboard from './pages/Dashboard.tsx';
-import Sidebar from './components/Sidebar.tsx';
-import Database from './pages/Database.tsx';
-import ChatPage from './pages/ChatPage.tsx';
-import ClientManagement from './pages/ClientManagement.tsx';
-import { generateChatReply } from './services/geminiService.ts';
-import PublicSearch from './pages/PublicSearch.tsx';
-import PayslipPage from './pages/PayslipPage.tsx';
-import Discussion from './pages/Discussion.tsx';
-import { supabase } from './services/supabaseClient.ts';
+import { User, UserRole, AppState, Client, Employee, EmployeeStatus, Message, Chat, Payslip } from './types';
+import Landing from './pages/Landing';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import Sidebar from './components/Sidebar';
+import Database from './pages/Database';
+import ChatPage from './pages/ChatPage';
+import ClientManagement from './pages/ClientManagement';
+import { generateChatReply } from './services/geminiService';
+import PublicSearch from './pages/PublicSearch';
+import PayslipPage from './pages/PayslipPage';
+import { supabase } from './services/supabaseClient';
 import { Loader } from 'lucide-react';
-import { useNotifier } from './components/Notifier.tsx';
+import { useNotifier } from './components/Notifier';
 
 // --- MOCK USER DATA (Authentication kept local) ---
 const MOCK_PIC_USER: User[] = [
   { id: 'pic-1', nama: 'PIC Swakarya', role: UserRole.PIC, avatar: 'https://i.imgur.com/P7t1bQy.png' },
 ];
-const MOCK_ADMIN_USER: User = { id: 'admin-1', nama: 'Admin SWAPRO', role: UserRole.ADMIN, avatar: 'https://i.imgur.com/8z2b2iP.png' };
-// FIX: Add a guest user for public-facing components that require a user prop.
-const MOCK_GUEST_USER: User = { id: 'guest', nama: 'Guest', role: UserRole.KARYAWAN };
-
 
 const App: React.FC = () => {
   const [state, setState] = useState<AppState>({
@@ -32,8 +27,6 @@ const App: React.FC = () => {
     employees: [],
     employeeChats: {},
     payslips: [],
-    dataEntries: [],
-    discussionChats: {},
   });
   const [loading, setLoading] = useState(true);
   const notifier = useNotifier();
@@ -71,7 +64,7 @@ const App: React.FC = () => {
     };
 
     fetchInitialData();
-  }, [notifier]);
+  }, []);
   
   // --- AUTHENTICATION (kept local) ---
   const handlePicLogin = (userId: string): boolean => {
@@ -207,8 +200,7 @@ const App: React.FC = () => {
         notifier.addNotification('Data klien berhasil diperbarui.', 'success');
     }
   };
-
-  // FIX: Added missing client deletion logic.
+    
   const deleteClient = async (clientId: string) => {
     const { error } = await supabase.from('clients').delete().eq('id', clientId);
     if (error) {
@@ -219,127 +211,156 @@ const App: React.FC = () => {
     notifier.addNotification('Klien berhasil dihapus.', 'success');
   };
 
-  // FIX: Added payslip update handler for PayslipPage.
-  const handlePayslipsChange = async (payslipsToUpsert: Payslip[]) => {
-    const { data, error } = await supabase.from('payslips').upsert(payslipsToUpsert).select();
+  // --- OPERATIONS FOR PAYSLIPS ---
+  const handlePayslipsChange = async (newPayslips: Payslip[]) => {
+    const { data, error } = await supabase.from('payslips').upsert(newPayslips, { onConflict: 'id' });
     if (error) {
-        notifier.addNotification(`Gagal mengunggah slip gaji: ${error.message}`, 'error');
-        return;
-    }
-    if (data) {
-        const updatedPayslipMap = new Map(state.payslips.map(p => [p.id, p]));
-        data.forEach(p => updatedPayslipMap.set(p.id, p as Payslip));
-        setState(prev => ({ ...prev, payslips: Array.from(updatedPayslipMap.values()) }));
-        notifier.addNotification(`${data.length} slip gaji berhasil diunggah/diperbarui.`, 'success');
+        notifier.addNotification(`Gagal menyimpan slip gaji: ${error.message}`, 'error');
+    } else if (data) {
+        const {data: allPayslips, error: fetchError} = await supabase.from('payslips').select('*');
+        if(fetchError) {
+            notifier.addNotification(`Gagal memuat ulang data slip gaji: ${fetchError.message}`, 'error');
+        } else {
+            setState(prev => ({ ...prev, payslips: allPayslips || [] }));
+            notifier.addNotification(`${newPayslips.length} slip gaji berhasil diproses.`, 'success');
+        }
     }
   };
 
-  // FIX: Added handlers for ChatPage functionality.
-  const updateEmployeeChats = (updatedChats: Record<string, Chat>) => {
-    setState(prev => ({ ...prev, employeeChats: updatedChats }));
+  // --- CHAT (kept local, but can be integrated similarly) ---
+  const handleEmployeeChatUpdate = (chats: Record<string, Chat>) => {
+    setState(prev => ({ ...prev, employeeChats: chats }));
   };
-  
-  const handleGenerateReply = async (employeeId: string, currentChat: Chat) => {
+
+  const generateEmployeeReply = async (employeeId: string, currentChat: Chat) => {
     const employee = state.employees.find(e => e.id === employeeId);
     if (!employee || !state.currentUser) return;
 
-    setState(prev => ({
-        ...prev,
-        employeeChats: { ...prev.employeeChats, [employeeId]: { ...currentChat, isTyping: true } }
+    setState(prevState => ({
+      ...prevState,
+      employeeChats: {
+        ...prevState.employeeChats,
+        [employeeId]: { ...currentChat, isTyping: true }
+      }
     }));
 
-    try {
-        const replyText = await generateChatReply(currentChat.messages, employee.fullName, state.currentUser.nama);
-        const replyMessage: Message = {
-            id: `msg-${Date.now()}`,
-            senderId: employeeId,
-            text: replyText,
-            timestamp: new Date().toISOString(),
-        };
+    const aiResponseText = await generateChatReply(
+      currentChat.messages,
+      employee.fullName,
+      state.currentUser.nama
+    );
 
-        setState(prev => ({
-            ...prev,
-            employeeChats: {
-                ...prev.employeeChats,
-                [employeeId]: {
-                    messages: [...(prev.employeeChats[employeeId]?.messages || []), replyMessage],
-                    isTyping: false
-                }
-            }
-        }));
-    } catch (error) {
-        console.error("Error generating AI reply:", error);
-        setState(prev => ({
-            ...prev,
-            employeeChats: { ...prev.employeeChats, [employeeId]: { ...currentChat, isTyping: false } }
-        }));
-    }
-  };
-
-  // FIX: Added handlers for Discussion page.
-  const updateDiscussionData = (dataEntries: DataEntry[], chats: Record<string, Chat>) => {
-    setState(prev => ({ ...prev, dataEntries, discussionChats: chats }));
-  };
-
-  const handleDiscussionAdminReply = (entry: DataEntry, userMessage: Message) => {
-      // For now, this just simulates an admin reply.
-      const adminReply: Message = {
-          id: `msg-admin-${Date.now()}`,
-          senderId: MOCK_ADMIN_USER.id,
-          text: "Terima kasih atas laporan Anda. Kami akan segera menindaklanjutinya.",
-          timestamp: new Date().toISOString(),
+    const newEmployeeMessage: Message = {
+      id: `msg-${Date.now()}`,
+      senderId: employeeId,
+      text: aiResponseText,
+      timestamp: new Date().toISOString()
+    };
+    
+    setState(prevState => {
+      const latestMessages = prevState.employeeChats[employeeId]?.messages || currentChat.messages;
+      const updatedChat = {
+        messages: [...latestMessages, newEmployeeMessage],
+        isTyping: false
       };
-      setState(prev => ({
-          ...prev,
-          discussionChats: {
-              ...prev.discussionChats,
-              [entry.id]: {
-                  ...prev.discussionChats[entry.id],
-                  messages: [...(prev.discussionChats[entry.id]?.messages || []), adminReply]
-              }
-          }
-      }));
+
+      return {
+        ...prevState,
+        employeeChats: {
+          ...prevState.employeeChats,
+          [employeeId]: updatedChat
+        }
+      };
+    });
   };
   
-  // FIX: Added loading state display.
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-slate-50">
-        <Loader className="w-12 h-12 text-blue-600 animate-spin" />
-      </div>
+        <div className="flex items-center justify-center h-screen bg-slate-50">
+            <div className="flex flex-col items-center space-y-4">
+                <Loader className="w-12 h-12 text-blue-500 animate-spin" />
+                <p className="font-semibold text-slate-600">Memuat data dari server...</p>
+            </div>
+        </div>
     );
   }
 
-  // FIX: Added main router and view logic, which was missing.
+  if (!state.currentUser) {
+    return (
+        <HashRouter>
+            <Routes>
+                <Route path="/admin" element={
+                     <Login 
+                        onPicLogin={handlePicLogin}
+                        picUsers={MOCK_PIC_USER}
+                    />
+                } />
+                <Route path="/search" element={
+                    <PublicSearch 
+                        employees={state.employees} 
+                        clients={state.clients}
+                        payslips={state.payslips}
+                        currentUser={{id: 'public', nama: 'Guest', role: UserRole.KARYAWAN}}
+                    />
+                } />
+                <Route path="*" element={<Landing />} />
+            </Routes>
+        </HashRouter>
+    )
+  }
+
+  // Default PIC/Admin view
   return (
     <HashRouter>
-      {state.currentUser ? (
-        <div className="flex h-screen bg-slate-50">
-          <Sidebar user={state.currentUser} onLogout={logout} />
-          <main className="flex-1 overflow-y-auto">
-            <Routes>
-              <Route path="/" element={<Dashboard state={state} />} />
-              <Route path="/database" element={<Database employees={state.employees} clients={state.clients} payslips={state.payslips} onDataChange={handleEmployeeDataChange} onAddEmployee={addEmployee} onUpdateEmployee={updateEmployee} onDeleteEmployee={deleteEmployee} currentUser={state.currentUser} />} />
-              <Route path="/clients" element={<ClientManagement clients={state.clients} employees={state.employees} onAddClient={addClient} onUpdateClient={updateClient} onDeleteClient={deleteClient} />} />
-              <Route path="/payslips" element={<PayslipPage payslips={state.payslips} employees={state.employees} clients={state.clients} onPayslipsChange={handlePayslipsChange} />} />
-              <Route path="/chat" element={<ChatPage employees={state.employees} currentUser={state.currentUser} chats={state.employeeChats} onUpdate={updateEmployeeChats} onGenerateReply={handleGenerateReply} />} />
-              {/* Note: Discussion page is not linked in sidebar, but route is available */}
-              <Route path="/discussion" element={<Discussion dataEntries={state.dataEntries} chats={state.discussionChats} currentUser={state.currentUser} adminUser={MOCK_ADMIN_USER} onUpdate={updateDiscussionData} onAdminReply={handleDiscussionAdminReply} />} />
-              <Route path="*" element={<Navigate to="/" />} />
-            </Routes>
-          </main>
-        </div>
-      ) : (
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Login onPicLogin={handlePicLogin} picUsers={MOCK_PIC_USER} />} />
-          <Route path="/search" element={<PublicSearch employees={state.employees} clients={state.clients} payslips={state.payslips} currentUser={MOCK_GUEST_USER} />} />
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      )}
+      <div className="flex h-screen bg-[var(--background)] overflow-hidden">
+        <Sidebar user={state.currentUser!} onLogout={logout} />
+        <main className="flex-1 overflow-y-auto">
+          <Routes>
+            <Route path="/" element={<Dashboard state={state} />} />
+            <Route path="/database" element={
+              <Database
+                employees={state.employees}
+                clients={state.clients}
+                payslips={state.payslips}
+                onDataChange={handleEmployeeDataChange} // For bulk import
+                onAddEmployee={addEmployee}
+                onUpdateEmployee={updateEmployee}
+                onDeleteEmployee={deleteEmployee}
+                currentUser={state.currentUser!}
+              />
+            } />
+            <Route path="/clients" element={
+              <ClientManagement
+                clients={state.clients}
+                employees={state.employees}
+                onAddClient={addClient}
+                onUpdateClient={updateClient}
+                onDeleteClient={deleteClient}
+              />
+            } />
+            <Route path="/payslips" element={
+              <PayslipPage
+                payslips={state.payslips}
+                employees={state.employees}
+                clients={state.clients}
+                onPayslipsChange={handlePayslipsChange}
+              />
+            } />
+            <Route path="/chat" element={
+              <ChatPage
+                employees={state.employees}
+                currentUser={state.currentUser!}
+                chats={state.employeeChats}
+                onUpdate={handleEmployeeChatUpdate}
+                onGenerateReply={generateEmployeeReply}
+              />
+            } />
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </main>
+      </div>
     </HashRouter>
   );
 };
 
-// FIX: Added the missing default export for the App component.
 export default App;

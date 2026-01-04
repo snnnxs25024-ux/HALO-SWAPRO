@@ -11,7 +11,7 @@ import {
   GraduationCap,
   PieChart as PieChartIcon,
 } from 'lucide-react';
-import { AppState, Employee, EmployeeStatus } from '../types.ts';
+import { AppState, Employee, EmployeeStatus } from '../types';
 import { 
   LineChart, 
   Line, 

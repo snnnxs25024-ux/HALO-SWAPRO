@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Search, Building, MapPin, Key, X, Info, User, ArrowLeft } from 'lucide-react';
-import { Employee, Client, User as AppUser, Payslip } from '../types.ts';
-import { EmployeeCard, EmployeeModal, Pagination } from './Database.tsx';
+import { Employee, Client, User as AppUser, Payslip } from '../types';
+import { EmployeeCard, EmployeeModal, Pagination } from './Database';
 import { useNavigate } from 'react-router-dom';
 
 

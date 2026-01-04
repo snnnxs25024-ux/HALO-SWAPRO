@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Search } from 'lucide-react';
-import { Employee, Client, User, Payslip } from '../types.ts';
-import { EmployeeCard, EmployeeModal, Pagination } from './Database.tsx';
+import { Employee, Client, User, Payslip } from '../types';
+import { EmployeeCard, EmployeeModal, Pagination } from './Database';
 
 interface EmployeeDirectoryProps {
   currentUser: User;
