@@ -505,7 +505,7 @@ const Landing: React.FC = () => {
                 alt="Swakarya Logo - PIC Login" 
                 title="PIC/Admin Login"
                 className="h-7 opacity-80 cursor-pointer hover:opacity-100 transition-opacity"
-                onClick={() => navigate('/admin')}
+                onClick={() => navigate('/login')}
               />
           </div>
         </div>
