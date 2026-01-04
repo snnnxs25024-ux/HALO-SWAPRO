@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { DataEntry, Chat, User, Message, DataStatus } from '../types';
+import { DataEntry, Chat, User, Message, DataStatus } from '../types.ts';
 import { Plus, Send, Paperclip, MessageSquare as MessageSquareIcon, X, ChevronLeft } from 'lucide-react';
 
 interface DiscussionProps {

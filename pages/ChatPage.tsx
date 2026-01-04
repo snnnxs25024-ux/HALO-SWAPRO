@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Employee, User, Chat, Message } from '../types';
+import { Employee, User, Chat, Message } from '../types.ts';
 import { Search, Send, Paperclip, MessagesSquare as MessagesSquareIcon, ChevronLeft } from 'lucide-react';
 
 interface ChatPageProps {

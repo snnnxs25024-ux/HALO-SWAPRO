@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { User, UserRole, AppState, Client, Employee, EmployeeStatus, Message, Chat, Payslip } from './types';
-import Landing from './pages/Landing';
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import Sidebar from './components/Sidebar';
-import Database from './pages/Database';
-import ChatPage from './pages/ChatPage';
-import ClientManagement from './pages/ClientManagement';
-import { generateChatReply } from './services/geminiService';
-import PublicSearch from './pages/PublicSearch';
-import PayslipPage from './pages/PayslipPage';
-import { supabase } from './services/supabaseClient';
+import { User, UserRole, AppState, Client, Employee, EmployeeStatus, Message, Chat, Payslip } from './types.ts';
+import Landing from './pages/Landing.tsx';
+import Login from './pages/Login.tsx';
+import Dashboard from './pages/Dashboard.tsx';
+import Sidebar from './components/Sidebar.tsx';
+import Database from './pages/Database.tsx';
+import ChatPage from './pages/ChatPage.tsx';
+import ClientManagement from './pages/ClientManagement.tsx';
+import { generateChatReply } from './services/geminiService.ts';
+import PublicSearch from './pages/PublicSearch.tsx';
+import PayslipPage from './pages/PayslipPage.tsx';
+import { supabase } from './services/supabaseClient.ts';
 import { Loader } from 'lucide-react';
-import { useNotifier } from './components/Notifier';
+import { useNotifier } from './components/Notifier.tsx';
 
 // --- MOCK USER DATA (Authentication kept local) ---
 const MOCK_PIC_USER: User[] = [

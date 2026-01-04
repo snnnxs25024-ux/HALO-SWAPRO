@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
-import { NotificationProvider } from './components/Notifier';
+import App from './App.tsx';
+import { NotificationProvider } from './components/Notifier.tsx';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

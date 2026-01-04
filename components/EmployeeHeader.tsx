@@ -1,6 +1,6 @@
 import React from 'react';
 import { LogOut } from 'lucide-react';
-import { User } from '../types';
+import { User } from '../types.ts';
 
 interface EmployeeHeaderProps {
   user: User;

@@ -28,9 +28,9 @@ import {
   Cake,
   GraduationCap,
 } from 'lucide-react';
-import { Employee, Client, EmployeeStatus, User, UserRole, Payslip, EDUCATION_LEVELS } from '../types';
-import { supabase } from '../services/supabaseClient';
-import { useNotifier } from '../components/Notifier';
+import { Employee, Client, EmployeeStatus, User, UserRole, Payslip, EDUCATION_LEVELS } from '../types.ts';
+import { supabase } from '../services/supabaseClient.ts';
+import { useNotifier } from '../components/Notifier.tsx';
 
 
 interface DatabaseProps {
