@@ -1,12 +1,17 @@
 {
   "version": 2,
   "builds": [
-    { "src": "**/*.html", "use": "@vercel/static" },
-    { "src": "**/*.json", "use": "@vercel/static" },
-    { "src": "**/*.ts", "use": "@vercel/static" },
-    { "src": "**/*.tsx", "use": "@vercel/static" }
+    { "src": "**/*", "use": "@vercel/static" }
   ],
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*\\.(?:ts|tsx))",
+      "headers": [
+        { "key": "Content-Type", "value": "application/javascript; charset=utf-8" }
+      ]
+    }
   ]
 }
