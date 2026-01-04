@@ -1,88 +1,131 @@
-import React, { useState, createContext, useContext, useEffect, ReactNode } from 'react';
-import { CheckCircle, XCircle, Info, X } from 'lucide-react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+  useCallback,
+} from 'react'
+import { CheckCircle, XCircle, Info, X } from 'lucide-react'
 
-type NotificationType = 'success' | 'error' | 'info';
+type NotificationType = 'success' | 'error' | 'info'
 
 interface Notification {
-    id: number;
-    message: string;
-    type: NotificationType;
+  id: number
+  message: string
+  type: NotificationType
 }
 
 interface NotificationContextType {
-    addNotification: (message: string, type: NotificationType) => void;
+  addNotification: (message: string, type: NotificationType) => void
 }
 
-const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
+const NotificationContext = createContext<NotificationContextType | null>(null)
 
-export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [notifications, setNotifications] = useState<Notification[]>([]);
+export function NotificationProvider({ children }: { children: ReactNode }) {
+  const [notifications, setNotifications] = useState<Notification[]>([])
 
-    const addNotification = (message: string, type: NotificationType) => {
-        const id = Date.now();
-        setNotifications(prev => [...prev, { id, message, type }]);
-    };
+  const addNotification = useCallback(
+    (message: string, type: NotificationType) => {
+      setNotifications((prev) => [
+        ...prev,
+        {
+          id: Date.now() + Math.random(),
+          message,
+          type,
+        },
+      ])
+    },
+    []
+  )
 
-    const removeNotification = (id: number) => {
-        setNotifications(prev => prev.filter(n => n.id !== id));
-    };
+  const removeNotification = useCallback((id: number) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id))
+  }, [])
 
-    return (
-        <NotificationContext.Provider value={{ addNotification }}>
-            {children}
-            <div className="fixed top-5 right-5 z-[200] space-y-3 w-full max-w-xs">
-                {notifications.map(notification => (
-                    <NotificationToast key={notification.id} notification={notification} onClose={() => removeNotification(notification.id)} />
-                ))}
-            </div>
-        </NotificationContext.Provider>
-    );
-};
+  return (
+    <NotificationContext.Provider value={{ addNotification }}>
+      {children}
 
-const NotificationToast: React.FC<{ notification: Notification; onClose: () => void }> = ({ notification, onClose }) => {
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            onClose();
-        }, 5000); // Auto-dismiss after 5 seconds
+      <div className="fixed top-5 right-5 z-[200] w-full max-w-xs space-y-3">
+        {notifications.map((notification) => (
+          <NotificationToast
+            key={notification.id}
+            notification={notification}
+            onClose={() => removeNotification(notification.id)}
+          />
+        ))}
+      </div>
+    </NotificationContext.Provider>
+  )
+}
 
-        return () => clearTimeout(timer);
-    }, [onClose]);
-    
-    const icons = {
-        success: <CheckCircle className="w-6 h-6 text-emerald-500" />,
-        error: <XCircle className="w-6 h-6 text-red-500" />,
-        info: <Info className="w-6 h-6 text-blue-500" />,
-    };
+function NotificationToast({
+  notification,
+  onClose,
+}: {
+  notification: Notification
+  onClose: () => void
+}) {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 5000)
+    return () => clearTimeout(timer)
+  }, [onClose])
 
-    const styles = {
-        success: 'bg-emerald-50 border-emerald-200',
-        error: 'bg-red-50 border-red-200',
-        info: 'bg-blue-50 border-blue-200',
-    };
+  const icons: Record<NotificationType, JSX.Element> = {
+    success: <CheckCircle className="h-6 w-6 text-emerald-500" />,
+    error: <XCircle className="h-6 w-6 text-red-500" />,
+    info: <Info className="h-6 w-6 text-blue-500" />,
+  }
 
-    return (
-        <div className={`flex items-start p-4 rounded-xl shadow-lg border animate-[slideIn_0.3s_ease-out] ${styles[notification.type]}`}>
-            <div className="flex-shrink-0">{icons[notification.type]}</div>
-            <div className="ml-3 flex-1 pt-0.5">
-                <p className="text-sm font-semibold text-slate-800">{notification.message}</p>
-            </div>
-            <button onClick={onClose} className="ml-4 p-1 rounded-full text-slate-400 hover:bg-slate-200/50">
-                <X className="w-4 h-4" />
-            </button>
-            <style>{`
-                @keyframes slideIn {
-                    from { transform: translateX(100%); opacity: 0; }
-                    to { transform: translateX(0); opacity: 1; }
-                }
-            `}</style>
-        </div>
-    );
-};
+  const styles: Record<NotificationType, string> = {
+    success: 'bg-emerald-50 border-emerald-200',
+    error: 'bg-red-50 border-red-200',
+    info: 'bg-blue-50 border-blue-200',
+  }
 
-export const useNotifier = () => {
-    const context = useContext(NotificationContext);
-    if (context === undefined) {
-        throw new Error('useNotifier must be used within a NotificationProvider');
-    }
-    return context;
-};
+  return (
+    <div
+      className={`flex items-start rounded-xl border p-4 shadow-lg
+        animate-[slideIn_0.25s_ease-out] ${styles[notification.type]}`}
+    >
+      <div className="flex-shrink-0">{icons[notification.type]}</div>
+
+      <div className="ml-3 flex-1 pt-0.5">
+        <p className="text-sm font-semibold text-slate-800">
+          {notification.message}
+        </p>
+      </div>
+
+      <button
+        onClick={onClose}
+        className="ml-4 rounded-full p-1 text-slate-400 hover:bg-slate-200/50"
+        aria-label="Close notification"
+      >
+        <X className="h-4 w-4" />
+      </button>
+
+      {/* animation scoped */}
+      <style>{`
+        @keyframes slideIn {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+      `}</style>
+    </div>
+  )
+}
+
+export function useNotifier() {
+  const context = useContext(NotificationContext)
+  if (!context) {
+    throw new Error('useNotifier must be used within a NotificationProvider')
+  }
+  return context
+}
