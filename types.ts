@@ -93,6 +93,8 @@ export interface AppState {
   clients: Client[];
   employeeChats: Record<string, Chat>;
   payslips: Payslip[];
+  dataEntries: DataEntry[];
+  discussionChats: Record<string, Chat>;
 }
 
 export enum DataStatus {

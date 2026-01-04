@@ -1,7 +1,12 @@
 {
   "version": 2,
-  "public": true,
+  "builds": [
+    { "src": "**/*.html", "use": "@vercel/static" },
+    { "src": "**/*.json", "use": "@vercel/static" },
+    { "src": "**/*.ts", "use": "@vercel/static" },
+    { "src": "**/*.tsx", "use": "@vercel/static" }
+  ],
   "rewrites": [
-    { "source": "/((?!.*\\.).*)", "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
